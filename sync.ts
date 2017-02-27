@@ -4,6 +4,8 @@ const run = () => {
   /** bombs available to detonate */
   let availableBombs = 2
   let myCapitalId: number
+  let gameTurn = 0
+  let isEarlyGame = true
   
   while (true) {
     let factories = processTurnInput()
@@ -16,13 +18,16 @@ const run = () => {
       distances,
       availableBombs,
       factories,
-      orders: []
+      orders: [],
+      isEarlyGame
     }
 
     state = maybeBomb(state)
     state = planOrders(state)
     print(state.orders.join('; ') || 'WAIT')
     availableBombs = state.availableBombs
+    gameTurn += 1
+    if (gameTurn > 7) { isEarlyGame = false }
   }
 }
 
@@ -70,9 +75,6 @@ const processTurnInput = () => {
 
 const processFactory = ( id: number, args: string[], factories: Ifactories) => {
   let [owner, availableCybors, production, frozenDays] = args.map(Number)
-  // count in negative numbers for factories not owned by me
-  // not so useful by maybe...
-  // if (owner !== OwnBy.me) { availableCybors = availableCybors * - 1 }
   factories[id] = {
     id: id,
     owner,
@@ -162,7 +164,10 @@ const planOrders = (state: Istate) => {
   const factoriesIdByAttractivenes = factoriesToList(state.factories)
   .filter(productiveOnly)
   .filter(noBombTarget)
-  .sort(byProductionAndDistanceFromMyCapital(state.distances, state.myCapitalId))
+  .sort((state.isEarlyGame
+    ? byDistanceFromCapitalAndProduction
+    : byProductionAndDistanceFromMyCapital)
+    (state.distances, state.myCapitalId))
   .map( (factory) => Number(factory.id))
   const newState = factoriesIdByAttractivenes.reduce(giveOrders, state)
   return newState
@@ -296,6 +301,13 @@ const byProductionAndDistanceFromMyCapital =
   ? factory2.production - factory1.production
   : distances[`${factory1.id}:${myCapitalId}`] - distances[`${factory2.id}:${myCapitalId}`]
 
+const byDistanceFromCapitalAndProduction = 
+(distances: Idinstance, myCapitalId: number) =>
+(factory1: Ifactory, factory2: Ifactory) =>
+  distances[`${factory1.id}:${myCapitalId}`] !== distances[`${factory2.id}:${myCapitalId}`]
+  ? distances[`${factory1.id}:${myCapitalId}`] - distances[`${factory2.id}:${myCapitalId}`]
+  : factory2.production - factory1.production
+
 const byDistance =
   (distances: Idinstance, sourceId: number) =>
   (factory1: Ifactory, factory2: Ifactory) => 
@@ -361,6 +373,7 @@ interface Istate {
     availableBombs: number
     factories: Ifactories
     orders: string[]
+    isEarlyGame: boolean
 }
 
 interface Ifactories {
