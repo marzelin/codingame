@@ -366,6 +366,26 @@ const moveOrder = (sourceId: number, targetId: number, size: number) =>
   `MOVE ${sourceId} ${targetId} ${size}`
 
 ///////////////////////////////////////////////////////////////////////////////
+/////////////////// NON-MUTABLE OBJECT UPDATES
+
+const updateStateWithFactory = (factory: Ifactory, state: Istate): Istate => {
+  const newFactories = Object.assign<{}, Ifactories, Ifactories>({}, state.factories, {
+    [factory.id]: factory
+  })
+  const newState: Istate = Object.assign<{}, Istate, Partial<Istate>>({}, state, {
+    factories: newFactories
+  })
+  return newState
+}
+
+const updateFactory = <P extends keyof Ifactory>(propName: P, value: Ifactory[P], factory: Ifactory): Ifactory => {
+  const newFactory: Ifactory = Object.assign<{}, Ifactory, Partial<Ifactory>>({}, factory, {
+    [propName as string]: value
+  })
+  return newFactory
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /////////////////// INTERFACES
 
 enum OwnBy {
