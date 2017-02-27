@@ -257,7 +257,7 @@ const getFuture = (factory: Ifactory, day: number) => {
             newAvailableCyborgs = newAvailableCyborgs * -1 // make cyborg count a positive number
           }
         } else { // enemy troops coming
-          newAvailableCyborgs = - troopSize // enemy troops are in negative that's why minus
+          newAvailableCyborgs -= troopSize // enemy troops are in negative that's why minus
         }
         break
       case OwnBy.nobody:
