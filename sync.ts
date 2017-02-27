@@ -75,7 +75,8 @@ const processTurnInput = () => {
 
 const processFactory = ( id: number, args: string[], factories: Ifactories) => {
   let [owner, availableCybors, production, frozenDays] = args.map(Number)
-  factories[id] = {
+
+  const factory = {
     id: id,
     owner,
     availableCybors,
@@ -84,34 +85,41 @@ const processFactory = ( id: number, args: string[], factories: Ifactories) => {
     isBombTarget: false,
     incomingTroops: {}
   }
-  return factories
+
+  return updateFactories(factory, factories)
 }
 
 const processTroop = ( args: string[], factories: Ifactories) => {
   let [owner, , destinationId, size, daysToArrival] = args.map(Number)
 
-  if (owner !== OwnBy.me) { size = size * -1 }
+  if (owner !== OwnBy.me) { size = size * -1 } // enemy troops are distinguished by negative number
 
   let factory = factories[destinationId]
-  let incomingTroops = factory.incomingTroops
-  let previousTroops = incomingTroops[daysToArrival]
+  let previousTroopsIncomingAtThatDay = factory.incomingTroops[daysToArrival]
 
-  let troops: Ifactory['incomingTroops'][any] =  previousTroops
-    ? Object.assign({}, previousTroops, { size: previousTroops.size + size }) 
-    : { daysToArrival, size }
+  let troop: Ifactory['incomingTroops'][number] 
+  if (previousTroopsIncomingAtThatDay) {
+    size = size + previousTroopsIncomingAtThatDay.size
+    troop = update('size', size, previousTroopsIncomingAtThatDay)
+  } else {
+    troop = {
+      size,
+      daysToArrival
+    }
+  }
 
-  incomingTroops = Object.assign({}, incomingTroops, {[daysToArrival]: troops})
-  factory = Object.assign({}, factory, { incomingTroops })
-  
-  return Object.assign({}, factories, { [destinationId]: factory})
+  factory = updateFactoryWithTroops(daysToArrival, troop, factory)
+  const newFactories = updateFactories(factory, factories)
+
+  return  newFactories
 }
 
 const processBomb = (args: string[], factories: Ifactories) => {
   let [bombOwner, , targetId] = args.map(Number)
   if (bombOwner === OwnBy.me) {
     let factory = factories[targetId] 
-    factory = Object.assign({}, factory, { isBombTarget: true })
-    factories = Object.assign({}, factories, { [targetId]: factory})
+    factory = update('isBombTarget', true, factory)
+    factories = updateFactories(factory, factories)
   }
   return factories
 }
@@ -124,39 +132,41 @@ const findMyCapitalId = (factories: Ifactories)  =>
 /////////////////// PLAN ORDERS
 
 const maybeBomb = (state: Istate) => {
-  if (!state.availableBombs) { return state }
+  if (!state.availableBombs) { // if there's no more bomb to launch, do nothing
+    return state
+  }
+
+  let newState = state 
 
   let factories = state.factories
-  let target = Object.keys(factories)
-  .map( (id) => factories[Number(id)])
-  .filter(enemyOnly)
-  .filter(productionGte2only)
-  .filter(noCaptureInProgress)
-  .filter(noBombTarget)
-  .sort(byProduction)[0]
-  if (target) {
+  let targetFactory = Object.keys(factories)
+    .map( (id) => factories[Number(id)])
+    .filter(enemyOnly)
+    .filter(productionGte2only)
+    .filter(noCaptureInProgress)
+    .filter(noBombTarget)
+    .sort(byProduction)[0]
+
+  if (targetFactory) {
     /** the factory from which the bomb will be launched */
     let bombLaunchFactory = factoriesToList(state.factories)
     .filter(mineOnly)
-    .sort(byDistance(state.distances, target.id))[0]
+    .sort(byDistance(state.distances, targetFactory.id))[0]
+
     if (bombLaunchFactory) {
       const newAvailableBombs = state.availableBombs - 1
-      const newOrder = `BOMB ${bombLaunchFactory.id} ${target.id}`
-      const newOrders = state.orders.slice().concat(newOrder)
-      target = Object.assign({}, target, {
-        isBombTarget: true
-      })
-      const newFactories = Object.assign({}, factories, {
-        [target.id]: target
-      })
-      const newState: Istate = Object.assign({}, state, {
-        factories: newFactories,
-        orders: newOrders,
-        availableBombs: newAvailableBombs 
-      })
+      newState = update('availableBombs', newAvailableBombs, newState)
+
+      const newOrder = `BOMB ${bombLaunchFactory.id} ${targetFactory.id}`
+      newState = updateStateWithOrder(newOrder, newState)
+
+      targetFactory = update('isBombTarget', true, targetFactory)
+      newState = updateStateWithFactory(targetFactory, newState)
       return newState
     }
   }
+
+  // if target not found return initial state
   return state
 }
 
@@ -189,27 +199,24 @@ const maybeAttack = (targetId: number, state: Istate) => {
     .filter(mineOnly)
     .sort(byDistance(state.distances, targetId))
     let newState = state
+
     for (let myFactory of myFactories) {
       let distance = state.distances[between(myFactory.id, targetId)]
       let target = state.factories[targetId]
       /** target state at the time of possible attack */
       let targetInFuture = getFuture(target, distance + 1)
+
       if (targetInFuture.owner !== OwnBy.me) { // if not mine try to attack
         if (myFactory.availableCybors > targetInFuture.availableCybors) {
           const assaultTroopSize = targetInFuture.availableCybors + 1
+
           const newOrder = moveOrder(myFactory.id, targetId, assaultTroopSize)
-          const newOrders = state.orders.slice().concat(newOrder)
+          newState = updateStateWithOrder(newOrder, state)
+
           const newAvailableCyborgs = myFactory.availableCybors  - assaultTroopSize
-          const newFactory = Object.assign({}, myFactory, {
-            availableCybors: newAvailableCyborgs
-          })
-          const newFactories = Object.assign({}, state.factories, {
-            [myFactory.id]: newFactory
-          })
-          newState = Object.assign({}, state, {
-            factories: newFactories,
-            orders: newOrders
-          })
+          const newMyFactory = update('availableCybors', newAvailableCyborgs, myFactory)
+
+          newState = updateStateWithFactory(newMyFactory, newState)
         }
       }
     }
@@ -218,13 +225,17 @@ const maybeAttack = (targetId: number, state: Istate) => {
 
 const getFuture = (factory: Ifactory, day: number) => {
   const incomingTroops = troopsToList(factory.incomingTroops)
-  .filter(arriveUntil(day))
-  if (incomingTroops.length === 0) {
-    if (factory.owner === OwnBy.nobody) { return factory}
-    return Object.assign({}, factory, {
-      availableCybors: factory.availableCybors + factory.production * day,
-    })
+    .filter(arriveUntil(day))
+
+  if (incomingTroops.length === 0) { // there's no incoming troops
+    if (factory.owner === OwnBy.nobody) {
+      return factory // return unchanged factory because neutral factories do not produce cyborgs
+    }
+    const newAvailableCyborgs = factory.availableCybors + factory.production * day
+    const updatedFactory = update('availableCybors', newAvailableCyborgs, factory)
+    return updatedFactory
   }
+
   let futureFactory = factory
   let previousArrivalDay = 0
   for (let incomingTroop of incomingTroops) {
@@ -275,18 +286,18 @@ const getFuture = (factory: Ifactory, day: number) => {
           }
         }
     }
-    futureFactory = Object.assign({}, futureFactory, {
-      availableCybors: newAvailableCyborgs,
-      owner: newOwner
-    })
+
+    futureFactory = update('availableCybors', newAvailableCyborgs, futureFactory)
+    futureFactory = update('owner', newOwner, futureFactory)
+
     previousArrivalDay = arrivalDay
   }
-  if (futureFactory.owner !== OwnBy.nobody) {
-    futureFactory = Object.assign({}, futureFactory, {
-      availableCybors: futureFactory.availableCybors +
-        futureFactory.production * (day - previousArrivalDay)
-    })
 
+  if (futureFactory.owner !== OwnBy.nobody) {
+    let newAvailableCyborgs = futureFactory.availableCybors +
+      futureFactory.production * (day - previousArrivalDay)
+
+    futureFactory = update('availableCybors', newAvailableCyborgs, futureFactory)
   }
   return futureFactory
 }
@@ -378,12 +389,33 @@ const updateStateWithFactory = (factory: Ifactory, state: Istate): Istate => {
   return newState
 }
 
-const updateFactory = <P extends keyof Ifactory>(propName: P, value: Ifactory[P], factory: Ifactory): Ifactory => {
-  const newFactory: Ifactory = Object.assign<{}, Ifactory, Partial<Ifactory>>({}, factory, {
-    [propName as string]: value
-  })
-  return newFactory
+const updateStateWithOrder = (order: string, state: Istate) => {
+  const newOrders = state.orders.concat(order)
+  return update('orders', newOrders, state)
 }
+
+const update = <T, P extends keyof T>(key: P, value: T[P], obj: T): T => {
+  return Object.assign<{}, T, any>({}, obj, {
+    [key as any]: value
+  })
+}
+
+const updateIncomingTroops = (daysToArrival: number, troops: Ifactory['incomingTroops'][number], incomingTroops: Ifactory['incomingTroops']) =>
+  Object.assign<{}, typeof incomingTroops, typeof incomingTroops>({}, incomingTroops, {
+    [daysToArrival]: troops
+  })
+
+const updateFactoryWithTroops = (daysToArrival: number, troops: Ifactory['incomingTroops'][number], factory: Ifactory) => {
+  const incomingTroops = Object.assign<{}, Ifactory['incomingTroops'], Ifactory['incomingTroops']>({}, factory.incomingTroops, {
+    [daysToArrival]: troops
+  })
+  return update('incomingTroops', incomingTroops, factory)
+}
+
+const updateFactories = (factory: Ifactory, factories: Ifactories): Ifactories =>
+  Object.assign<{}, Ifactories, Ifactories>({}, factories, {
+    [factory.id]: factory
+  })
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////// INTERFACES
