@@ -145,6 +145,7 @@ const maybeBomb = (state: Istate) => {
     .filter(productionGte2only)
     .filter(noCaptureInProgress)
     .filter(noBombTarget)
+    .filter(noFrozen)
     .sort(byProduction)[0]
 
   if (targetFactory) {
@@ -201,8 +202,8 @@ const maybeAttack = (targetId: number, state: Istate) => {
     let newState = state
 
     for (let myFactory of myFactories) {
-      let distance = state.distances[between(myFactory.id, targetId)]
-      let target = state.factories[targetId]
+      let distance = newState.distances[between(myFactory.id, targetId)]
+      let target = newState.factories[targetId]
       /** target state at the time of possible attack */
       let targetInFuture = getFuture(target, distance + 1)
 
@@ -211,7 +212,7 @@ const maybeAttack = (targetId: number, state: Istate) => {
           const assaultTroopSize = targetInFuture.availableCybors + 1
 
           const newOrder = moveOrder(myFactory.id, targetId, assaultTroopSize)
-          newState = updateStateWithOrder(newOrder, state)
+          newState = updateStateWithOrder(newOrder, newState)
 
           const newAvailableCyborgs = myFactory.availableCybors  - assaultTroopSize
           const newMyFactory = update('availableCybors', newAvailableCyborgs, myFactory)
@@ -355,7 +356,7 @@ const noCaptureInProgress = (factory: Ifactory) => {
 }
 
 const noBombTarget = (factory: Ifactory) => !factory.isBombTarget
-const noFrozen = (factory: Ifactory) => !factory.frozenDays
+const noFrozen = (factory: Ifactory) => factory.frozenDays - 1 <= 0
 
 // for troops
 
