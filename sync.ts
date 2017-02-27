@@ -3,11 +3,16 @@ const run = () => {
   const distances = processInitialInput()
   /** bombs available to detonate */
   let availableBombs = 2
+  let myCapitalId: number
   
   while (true) {
     let factories = processTurnInput()
+    myCapitalId = myCapitalId != null
+    ? myCapitalId
+    : findMyCapitalId(factories)
 
     let state: Istate = { 
+      myCapitalId,
       distances,
       availableBombs,
       factories,
@@ -109,11 +114,16 @@ const processBomb = (args: string[], factories: Ifactories) => {
   return factories
 }
 
+const findMyCapitalId = (factories: Ifactories)  =>
+  factoriesToList(factories)
+  .find(mineOnly).id
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////// PLAN ORDERS
 
 const maybeBomb = (state: Istate) => {
+  if (!state.availableBombs) { return state }
+
   let factories = state.factories
   let target = Object.keys(factories)
   .map( (id) => factories[Number(id)])
@@ -121,11 +131,10 @@ const maybeBomb = (state: Istate) => {
   .filter(productionGte2only)
   .filter(noCaptureInProgress)
   .filter(noBombTarget)
-  .filter(noFrozen)
   .sort(byProduction)[0]
   if (target) {
     /** the factory from which the bomb will be launched */
-    let bombLaunchFactory = getFactories(state)
+    let bombLaunchFactory = factoriesToList(state.factories)
     .filter(mineOnly)
     .sort(byDistance(state.distances, target.id))[0]
     if (bombLaunchFactory) {
@@ -150,14 +159,13 @@ const maybeBomb = (state: Istate) => {
 }
 
 const planOrders = (state: Istate) => {
-  let factories = state.factories
-  return Object.keys(factories)
-  .map( (id) => factories[Number(id)])
+  const factoriesIdByAttractivenes = factoriesToList(state.factories)
   .filter(productiveOnly)
   .filter(noBombTarget)
-  .sort(byProduction)
+  .sort(byProductionAndDistanceFromMyCapital(state.distances, state.myCapitalId))
   .map( (factory) => Number(factory.id))
-  .reduce(handle, state)
+  const newState = factoriesIdByAttractivenes.reduce(handle, state)
+  return newState
 }
 
 const handle = (state: Istate, targetId: number) => {
@@ -208,13 +216,20 @@ const handle = (state: Istate, targetId: number) => {
 const byProduction = (factory1: Ifactory, factory2: Ifactory) =>
   factory2.production - factory1.production
 
+const byProductionAndDistanceFromMyCapital =
+(distances: Idinstance, myCapitalId: number) =>
+(factory1: Ifactory, factory2: Ifactory) =>
+  factory2.production !== factory1.production
+  ? factory2.production - factory1.production
+  : distances[`${factory1.id}:${myCapitalId}`] - distances[`${factory2.id}:${myCapitalId}`]
+
 const byDistance =
   (distances: Idinstance, sourceId: number) =>
   (factory1: Ifactory, factory2: Ifactory) => 
   distances[`${sourceId}:${factory1.id}`] - distances[`${sourceId}:${factory2.id}`]
 
 ///////////////////////////////////////////////////////////////////////////////
-/////////////////// FILTERS
+/////////////////// PREDICATES
 
 /** 
  * predicate for filter that saves
@@ -242,10 +257,10 @@ const noFrozen = (factory: Ifactory) => !factory.frozenDays
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////// UTILITIES
 
-const getFactories = (state: Istate) => Object.keys(state.factories)
-  .map( (id) => state.factories[Number(id)])
+const factoriesToList = (factories: Ifactories) => Object.keys(factories)
+  .map( (id) => factories[Number(id)])
 
-const getTroops = (factory: Ifactory) => Object.keys(factory.incomingTroops)
+const troopsToList = (factory: Ifactory) => Object.keys(factory.incomingTroops)
   .map( (arrivalDay) => factory.incomingTroops[Number(arrivalDay)])
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,6 +273,7 @@ enum OwnBy {
 }
 
 interface Istate {
+    myCapitalId: number
     distances: Idinstance
     availableBombs: number
     factories: Ifactories
