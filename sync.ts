@@ -164,52 +164,125 @@ const planOrders = (state: Istate) => {
   .filter(noBombTarget)
   .sort(byProductionAndDistanceFromMyCapital(state.distances, state.myCapitalId))
   .map( (factory) => Number(factory.id))
-  const newState = factoriesIdByAttractivenes.reduce(handle, state)
+  const newState = factoriesIdByAttractivenes.reduce(giveOrders, state)
   return newState
 }
 
-const handle = (state: Istate, targetId: number) => {
-  let factories = state.factories
-  const targetFactory = factories[targetId]
-  const attacker = Object.keys(targetFactory.incomingTroops)
-  .map(Number) .sort()
-  .map( (daysToArrival) => targetFactory.incomingTroops[daysToArrival])[0]
-  if (targetFactory.owner !== OwnBy.me
-      // if there is no incoming troops
-      // or they are not mine
-      && !(attacker && attacker.size > 0)) {
-    const myFactories = Object.keys(factories)
-    .map( (id) => factories[Number(id)] )
-    .filter( ({owner}) => owner === OwnBy.me)
-    .sort(byDistance(state.distances, targetId))
-    for (let myFactory of myFactories) {
-      const distance = state.distances[`${myFactory.id}:${targetId}`]
-      const myCyborgs = myFactory.availableCybors 
-      let enemyCyborgs = targetFactory.availableCybors
-      if (targetFactory.owner === OwnBy.enemy) { enemyCyborgs += targetFactory.production * (distance + 1) }
-      if (myCyborgs > enemyCyborgs) {
-        myFactory = Object.assign({}, myFactory, {
-          availableCybors: myFactory.availableCybors - enemyCyborgs - 1
-        })
-        factories = Object.assign({}, factories, {
-          [myFactory.id]: myFactory
-        })
-
-        const order = `MOVE ${myFactory.id} ${targetId} ${enemyCyborgs + 1}`
-        const orders = state.orders.slice().concat(order)
-
-        const newState: Istate = Object.assign({}, state, {
-          factories,
-          orders
-        })
-
-        return newState
-      }
-    }
+const giveOrders = (state: Istate, factoryId: number) => {
+  let factoryOwner = state.factories[factoryId].owner
+  switch (factoryOwner) {
+    case OwnBy.enemy:
+    case OwnBy.nobody:
+      return maybeAttack(factoryId, state)
+    case OwnBy.me:
+      return maybeDefend(factoryId, state)
   }
-  return state
 }
 
+const maybeAttack = (targetId: number, state: Istate) => {
+    const myFactories = factoriesToList(state.factories)
+    .filter(mineOnly)
+    .sort(byDistance(state.distances, targetId))
+    let newState = state
+    for (let myFactory of myFactories) {
+      let distance = state.distances[between(myFactory.id, targetId)]
+      let target = state.factories[targetId]
+      /** target state at the time of possible attack */
+      let targetInFuture = getFuture(target, distance + 1)
+      if (targetInFuture.owner !== OwnBy.me) { // if not mine try to attack
+        if (myFactory.availableCybors > targetInFuture.availableCybors) {
+          const assaultTroopSize = targetInFuture.availableCybors + 1
+          const newOrder = moveOrder(myFactory.id, targetId, assaultTroopSize)
+          const newOrders = state.orders.slice().concat(newOrder)
+          const newAvailableCyborgs = myFactory.availableCybors  - assaultTroopSize
+          const newFactory = Object.assign({}, myFactory, {
+            availableCybors: newAvailableCyborgs
+          })
+          const newFactories = Object.assign({}, state.factories, {
+            [myFactory.id]: newFactory
+          })
+          newState = Object.assign({}, state, {
+            factories: newFactories,
+            orders: newOrders
+          })
+        }
+      }
+    }
+  return newState
+}
+
+const getFuture = (factory: Ifactory, day: number) => {
+  const incomingTroops = troopsToList(factory.incomingTroops)
+  .filter(arriveUntil(day))
+  if (incomingTroops.length === 0) {
+    if (factory.owner === OwnBy.nobody) { return factory}
+    return Object.assign({}, factory, {
+      availableCybors: factory.availableCybors + factory.production * day,
+    })
+  }
+  let futureFactory = factory
+  let previousArrivalDay = 0
+  for (let incomingTroop of incomingTroops) {
+    let futureOwner = futureFactory.owner
+    let troopSize = incomingTroop.size
+    let newOwner = futureFactory.owner
+    let production = futureFactory.production
+    let arrivalDay = incomingTroop.daysToArrival
+    let newAvailableCyborgs = futureFactory.availableCybors
+    if (newOwner !== OwnBy.nobody) {
+      newAvailableCyborgs =  production * (arrivalDay - previousArrivalDay)
+    }
+    switch (futureOwner) {
+      case OwnBy.me:
+        if (troopSize >= 0) { // my own troops coming
+          newAvailableCyborgs = futureFactory.availableCybors + troopSize
+        } else { // enemy troops coming
+          newAvailableCyborgs = futureFactory.availableCybors + troopSize
+          if (newAvailableCyborgs < 0) {
+            newOwner = OwnBy.enemy // change owner
+            newAvailableCyborgs = newAvailableCyborgs * -1 // make cyborg count a positive number
+          }
+        }
+        break
+      case OwnBy.enemy:
+        if (troopSize >= 0) { // my own troops coming
+          newAvailableCyborgs = futureFactory.availableCybors - troopSize
+          if (newAvailableCyborgs < 0) {
+            newOwner = OwnBy.me // change owner
+            newAvailableCyborgs = newAvailableCyborgs * -1 // make cyborg count a positive number
+          }
+        } else { // enemy troops coming
+          newAvailableCyborgs = futureFactory.availableCybors - troopSize // enemy troops are in negative that's why minus
+        }
+        break
+      case OwnBy.nobody:
+        if (troopSize >= 0) { // my own troops coming
+          newAvailableCyborgs = futureFactory.availableCybors - troopSize
+          if (newAvailableCyborgs < 0) {
+            newOwner = OwnBy.me
+            newAvailableCyborgs = newAvailableCyborgs * -1
+          }
+        } else { // enemy troops coming
+          newAvailableCyborgs = futureFactory.availableCybors + troopSize // enemy troops are in negative that's why minus
+          if (newAvailableCyborgs < 0) {
+            newOwner = OwnBy.enemy
+            newAvailableCyborgs = newAvailableCyborgs * -1
+          }
+        }
+    }
+    futureFactory = Object.assign({}, futureFactory, {
+      availableCybors: newAvailableCyborgs,
+      owner: newOwner
+    })
+    previousArrivalDay = arrivalDay
+  }
+  return futureFactory
+}
+
+const maybeDefend = (factoryId: number, state: Istate) => {
+  // TODO
+  return state
+}
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////// SORT ORDER
 
@@ -254,14 +327,24 @@ const noCaptureInProgress = (factory: Ifactory) => {
 const noBombTarget = (factory: Ifactory) => !factory.isBombTarget
 const noFrozen = (factory: Ifactory) => !factory.frozenDays
 
+// for troops
+
+const arriveUntil = (day: number) => (troop: Ifactory['incomingTroops'][any]) =>
+  troop.daysToArrival <= day
+
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////// UTILITIES
 
 const factoriesToList = (factories: Ifactories) => Object.keys(factories)
   .map( (id) => factories[Number(id)])
 
-const troopsToList = (factory: Ifactory) => Object.keys(factory.incomingTroops)
-  .map( (arrivalDay) => factory.incomingTroops[Number(arrivalDay)])
+const troopsToList = (troops: Ifactory['incomingTroops']) => Object.keys(troops)
+  .map( (arrivalDay) => troops[Number(arrivalDay)])
+
+const between = (factory1Id: number, factory2Id: number) => `${factory1Id}:${factory2Id}`  
+
+const moveOrder = (sourceId: number, targetId: number, size: number) =>
+  `MOVE ${sourceId} ${targetId} ${size}`
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////// INTERFACES
