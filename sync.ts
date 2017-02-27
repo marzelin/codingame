@@ -240,9 +240,9 @@ const getFuture = (factory: Ifactory, day: number) => {
     switch (futureOwner) {
       case OwnBy.me:
         if (troopSize >= 0) { // my own troops coming
-          newAvailableCyborgs = futureFactory.availableCybors + troopSize
+          newAvailableCyborgs = newAvailableCyborgs + troopSize
         } else { // enemy troops coming
-          newAvailableCyborgs = futureFactory.availableCybors + troopSize
+          newAvailableCyborgs = newAvailableCyborgs + troopSize
           if (newAvailableCyborgs < 0) {
             newOwner = OwnBy.enemy // change owner
             newAvailableCyborgs = newAvailableCyborgs * -1 // make cyborg count a positive number
@@ -251,24 +251,24 @@ const getFuture = (factory: Ifactory, day: number) => {
         break
       case OwnBy.enemy:
         if (troopSize >= 0) { // my own troops coming
-          newAvailableCyborgs = futureFactory.availableCybors - troopSize
+          newAvailableCyborgs = newAvailableCyborgs - troopSize
           if (newAvailableCyborgs < 0) {
             newOwner = OwnBy.me // change owner
             newAvailableCyborgs = newAvailableCyborgs * -1 // make cyborg count a positive number
           }
         } else { // enemy troops coming
-          newAvailableCyborgs = futureFactory.availableCybors - troopSize // enemy troops are in negative that's why minus
+          newAvailableCyborgs = - troopSize // enemy troops are in negative that's why minus
         }
         break
       case OwnBy.nobody:
         if (troopSize >= 0) { // my own troops coming
-          newAvailableCyborgs = futureFactory.availableCybors - troopSize
+          newAvailableCyborgs = newAvailableCyborgs - troopSize
           if (newAvailableCyborgs < 0) {
             newOwner = OwnBy.me
             newAvailableCyborgs = newAvailableCyborgs * -1
           }
         } else { // enemy troops coming
-          newAvailableCyborgs = futureFactory.availableCybors + troopSize // enemy troops are in negative that's why minus
+          newAvailableCyborgs = newAvailableCyborgs + troopSize // enemy troops are in negative that's why minus
           if (newAvailableCyborgs < 0) {
             newOwner = OwnBy.enemy
             newAvailableCyborgs = newAvailableCyborgs * -1
@@ -280,6 +280,13 @@ const getFuture = (factory: Ifactory, day: number) => {
       owner: newOwner
     })
     previousArrivalDay = arrivalDay
+  }
+  if (futureFactory.owner !== OwnBy.nobody) {
+    futureFactory = Object.assign({}, futureFactory, {
+      availableCybors: futureFactory.availableCybors +
+        futureFactory.production * (day - previousArrivalDay)
+    })
+
   }
   return futureFactory
 }
