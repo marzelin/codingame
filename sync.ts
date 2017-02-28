@@ -1,7 +1,8 @@
 const run = () => {
+  const initialInput = processInitialInput()
   /** distances between factories */
-  const distances = processInitialInput()
-  /** bombs available to detonate */
+  const distances = initialInput.reduce(getDistances, {})
+  /** bombs available to use */
   let availableBombs = 2
   let myCapitalId: number
   let gameTurn = 0
@@ -37,18 +38,35 @@ const run = () => {
 const processInitialInput = () => {
   /** read and forget useless number of factories */
   readline()
-  /** the number of links between factories */
-  let linkCount = Number(readline())
 
-  return Array
-    .from(Array(linkCount), (_) => readline())
-    .map( (s) => s.split(' '))
-    .reduce( (s, [factory1, factory2, distance]) => 
-      Object.assign({}, s,
-      { [`${factory1}:${factory2}`]: Number(distance),
-      [`${factory2}:${factory1}`]: Number(distance) }),
-    {} as Idinstance)
+  /** the number of links between factories */
+  const linkCount = Number(readline())
+
+  const inputs = []
+  for (let i = 0; i < linkCount; i++) {
+    const input = readline()
+    inputs.push(input)
+  }
+
+  return inputs
 }
+
+const getDistances = (initialDistances: Idinstance, input: string) => {
+  const [factory1Id, factory2Id, distance] = input.split(' ').map(Number)
+
+  return [initialDistances]
+    .map(addDistance(factory1Id, factory2Id, distance))
+    .map(addDistance(factory2Id, factory1Id, distance))
+    [0]
+}
+
+
+const addDistance =
+  (factory1Id: number, factory2Id: number, distance: number) =>
+  (distances: Idinstance) => {
+    const distanceKey = createDistanceKeyBetween(factory1Id, factory2Id)
+    return update(distanceKey, distance, distances)
+  }
 
 const processTurnInput = () => {
   let factories: Ifactories = {}
@@ -202,7 +220,7 @@ const maybeAttack = (targetId: number, state: Istate) => {
     let newState = state
 
     for (let myFactory of myFactories) {
-      let distance = newState.distances[between(myFactory.id, targetId)]
+      let distance = newState.distances[createDistanceKeyBetween(myFactory.id, targetId)]
       let target = newState.factories[targetId]
       /** target state at the time of possible attack */
       let targetInFuture = getFuture(target, distance + 1)
@@ -372,7 +390,7 @@ const factoriesToList = (factories: Ifactories) => Object.keys(factories)
 const troopsToList = (troops: Ifactory['incomingTroops']) => Object.keys(troops)
   .map( (arrivalDay) => troops[Number(arrivalDay)])
 
-const between = (factory1Id: number, factory2Id: number) => `${factory1Id}:${factory2Id}`  
+const createDistanceKeyBetween = (factory1Id: number, factory2Id: number) => `${factory1Id}:${factory2Id}`  
 
 const moveOrder = (sourceId: number, targetId: number, size: number) =>
   `MOVE ${sourceId} ${targetId} ${size}`
@@ -400,11 +418,6 @@ const update = <T, P extends keyof T>(key: P, value: T[P], obj: T): T => {
     [key as any]: value
   })
 }
-
-const updateIncomingTroops = (daysToArrival: number, troops: Ifactory['incomingTroops'][number], incomingTroops: Ifactory['incomingTroops']) =>
-  Object.assign<{}, typeof incomingTroops, typeof incomingTroops>({}, incomingTroops, {
-    [daysToArrival]: troops
-  })
 
 const updateFactoryWithTroops = (daysToArrival: number, troops: Ifactory['incomingTroops'][number], factory: Ifactory) => {
   const incomingTroops = Object.assign<{}, Ifactory['incomingTroops'], Ifactory['incomingTroops']>({}, factory.incomingTroops, {
