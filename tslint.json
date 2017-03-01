@@ -11,6 +11,7 @@
     "no-empty": true,
     // "no-magic-numbers": [true],
     "radix": true,
-    "quotemark": [true, "single", "avoid-escape"]
+    "quotemark": [true, "single", "avoid-escape"],
+    "align": [true, "parameters", "statements"]
   }
 }
