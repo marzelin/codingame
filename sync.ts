@@ -1,4 +1,4 @@
-(function(){ // IIFE to make variables not to leak outside of this file
+const exportsForTests = (function(){ // IIFE to make variables not to leak outside of this file
   const run = () => {
     const initialInput = processInitialInput()
     /** distances between factories */
@@ -499,9 +499,12 @@
   ///////////////////////////////////////////////////////////////////////////////
   /////////////////// START PROGRAM
 
-  if(typeof module !== 'undefined') {
-    module.exports = {}
-  } else {
-    run()
+  if(typeof module === 'undefined') {
+    run() // if the runtime environment is NOT node, run the program and thus never leave this function
+  }
+  return {
+    addDistance
   }
 }())
+
+export = exportsForTests
