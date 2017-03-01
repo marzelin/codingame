@@ -224,31 +224,32 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
   }
 
   const maybeAttack = (targetId: number, state: Istate) => {
-      const myFactories = factoriesToList(state.factories)
+    const myFactories = factoriesToList(state.factories)
       .filter(mineOnly)
       .sort(byDistance(state.distances, targetId))
-      let newState = state
+      
+    let newState = state
 
-      for (let myFactory of myFactories) {
-        let distance = newState.distances[createDistanceKeyBetween(myFactory.id, targetId)]
-        let target = newState.factories[targetId]
-        /** target state at the time of possible attack */
-        let targetInFuture = getFuture(target, distance + 1)
+    for (let myFactory of myFactories) {
+      let distance = newState.distances[createDistanceKeyBetween(myFactory.id, targetId)]
+      let target = newState.factories[targetId]
+      /** target state at the time of possible attack */
+      let targetInFuture = getFuture(target, distance + 1)
 
-        if (targetInFuture.owner !== OwnBy.me) { // if not mine try to attack
-          if (myFactory.availableCybors > targetInFuture.availableCybors) {
-            const assaultTroopSize = targetInFuture.availableCybors + 1
+      if (targetInFuture.owner !== OwnBy.me) { // if not mine try to attack
+        if (myFactory.availableCybors > targetInFuture.availableCybors) {
+          const assaultTroopSize = targetInFuture.availableCybors + 1
 
-            const newOrder = moveOrder(myFactory.id, targetId, assaultTroopSize)
-            newState = updateStateWithOrder(newOrder, newState)
+          const newOrder = moveOrder(myFactory.id, targetId, assaultTroopSize)
+          newState = updateStateWithOrder(newOrder, newState)
 
-            const newAvailableCyborgs = myFactory.availableCybors  - assaultTroopSize
-            const newMyFactory = update('availableCybors', newAvailableCyborgs, myFactory)
+          const newAvailableCyborgs = myFactory.availableCybors  - assaultTroopSize
+          const newMyFactory = update('availableCybors', newAvailableCyborgs, myFactory)
 
-            newState = updateStateWithFactory(newMyFactory, newState)
-          }
+          newState = updateStateWithFactory(newMyFactory, newState)
         }
       }
+    }
     return newState
   }
 
