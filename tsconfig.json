@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    // compile to `module.exports` and `require` statements
+    // because `export` and `import` statements
+    // can't be used in the code for codingame
+    "module": "commonjs",
+    // don't polyfill any of new ecmascript features
+    "target": "esnext",
+    "inlineSourceMap": true,
+    // enforce more rigorous rules since catching bugs
+    // at compile time is much more time-effecting
+    // than debugging runtime errors
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "./build"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts"
+  ]
+  
+}

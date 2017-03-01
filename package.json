@@ -1,5 +1,12 @@
 {
+  "name": "codingame-setup",
+  "version": "1.0.0",
   "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/mocha": "^2.2.34",
+    "chai": "^3.5.0",
+    "mocha": "^3.2.0",
+    "ts-node": "^2.1.0",
     "tslint": "^4.4.2",
     "typescript": "^2.2.1"
   }
