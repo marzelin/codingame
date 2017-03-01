@@ -98,12 +98,12 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
   }
 
   const processFactory = ( id: number, args: string[], factories: Ifactories) => {
-    let [owner, availableCybors, production, frozenDays] = args.map(Number)
+    let [owner, availableCyborgs, production, frozenDays] = args.map(Number)
 
     const factory = {
       id: id,
       owner,
-      availableCybors,
+      availableCyborgs,
       production,
       frozenDays,
       isBombTarget: false,
@@ -113,27 +113,54 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
     return updateFactories(factory, factories)
   }
 
-  const processTroop = ( args: string[], factories: Ifactories) => {
-    let [owner, , destinationId, size, daysToArrival] = args.map(Number)
+  const processTroop = ( args: string[], initialFactories: Ifactories): Ifactories => {
+    const [owner, , destinationFactoryId, size, day] = args.map(Number)
+    const initialFactory = initialFactories[destinationFactoryId]
+    const initialEvent = initialFactory.eventsAtDay[day]
 
-    if (owner !== OwnBy.me) { size = size * -1 } // enemy troops are distinguished by negative number
-
-    let factory = factories[destinationId]
-    let previousTroopsIncomingAtThatDay = factory.incomingTroops[daysToArrival]
-
-    let troop: Ifactory['incomingTroops'][number] 
-    if (previousTroopsIncomingAtThatDay) {
-      size = size + previousTroopsIncomingAtThatDay.size
-      troop = update('size', size, previousTroopsIncomingAtThatDay)
-    } else {
-      troop = {
-        size,
-        daysToArrival
-      }
+    const newEvent: IeventAtDay = {
+      day,
+      incomingTroopSize: size,
+      troopOwner: owner
     }
 
-    factory = updateFactoryWithTroops(daysToArrival, troop, factory)
-    const newFactories = updateFactories(factory, factories)
+    let finalEvent: IeventAtDay
+
+    if (initialEvent) { // there are already events at this day
+      const initialTroopSize = initialEvent.incomingTroopSize 
+
+      if (initialTroopSize === undefined // no troops coming at that day (there must be bomb exploding)
+      || initialTroopSize === 0) { // troops annihilated aech other, doesn't matter who is the owner, because factory cannot be captured with 0 cyborgs
+          finalEvent = Object.assign<{}, IeventAtDay, IeventAtDay>({}, initialEvent, newEvent) // just replace previous values with new ones
+      } else { // there are some troops coming at that day
+        const initialTroopOwner = initialEvent.troopOwner
+        if (initialTroopOwner === owner) {  // troops are allied
+          const combinedTroopSize = initialTroopSize + size
+          finalEvent = Object.assign<{}, IeventAtDay, Partial<IeventAtDay>>({}, newEvent, {
+            incomingTroopSize: combinedTroopSize
+          })
+        } else { // troops are hostiled, let them fight
+
+          const troopSizeAfterBattle = size - initialTroopSize
+          if (troopSizeAfterBattle > 0) { // new troop won so change troop size and owner
+            finalEvent = Object.assign<{}, IeventAtDay, Partial<IeventAtDay>>({}, newEvent, {
+              incomingTroopSize: troopSizeAfterBattle
+            })
+          } else { // previous troop won, or troops killed each other in which case owner doesn't matter
+            const remainingTroopSize = - troopSizeAfterBattle // the number of remaing troops is negative here so revert it
+            finalEvent = Object.assign<{}, IeventAtDay, Partial<IeventAtDay>>({}, newEvent, {
+              incomingTroopSize: remainingTroopSize   
+            })
+          }
+        }
+               
+      }
+    } else { // there's no event at this day, put new event as is
+      finalEvent = newEvent
+    }
+
+    const finalFactoryState = updateFactoryWithEvent(finalEvent, initialFactory)
+    const newFactories = updateFactories(finalFactoryState, initialFactories)
 
     return  newFactories
   }
@@ -237,14 +264,14 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
       let targetInFuture = getFuture(target, distance + 1)
 
       if (targetInFuture.owner !== OwnBy.me) { // if not mine try to attack
-        if (myFactory.availableCybors > targetInFuture.availableCybors) {
-          const assaultTroopSize = targetInFuture.availableCybors + 1
+        if (myFactory.availableCyborgs > targetInFuture.availableCyborgs) {
+          const assaultTroopSize = targetInFuture.availableCyborgs + 1
 
           const newOrder = moveOrder(myFactory.id, targetId, assaultTroopSize)
           newState = updateStateWithOrder(newOrder, newState)
 
-          const newAvailableCyborgs = myFactory.availableCybors  - assaultTroopSize
-          const newMyFactory = update('availableCybors', newAvailableCyborgs, myFactory)
+          const newAvailableCyborgs = myFactory.availableCyborgs  - assaultTroopSize
+          const newMyFactory = update('availableCyborgs', newAvailableCyborgs, myFactory)
 
           newState = updateStateWithFactory(newMyFactory, newState)
         }
@@ -261,8 +288,8 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
       if (factory.owner === OwnBy.nobody) {
         return factory // return unchanged factory because neutral factories do not produce cyborgs
       }
-      const newAvailableCyborgs = factory.availableCybors + factory.production * day
-      const updatedFactory = update('availableCybors', newAvailableCyborgs, factory)
+      const newAvailableCyborgs = factory.availableCyborgs + factory.production * day
+      const updatedFactory = update('availableCyborgs', newAvailableCyborgs, factory)
       return updatedFactory
     }
 
@@ -274,7 +301,7 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
       let newOwner            = futureFactory.owner
       let production          = futureFactory.production
       let arrivalDay          = incomingTroop.daysToArrival
-      let newAvailableCyborgs = futureFactory.availableCybors
+      let newAvailableCyborgs = futureFactory.availableCyborgs
       if (newOwner !== OwnBy.nobody) {
         newAvailableCyborgs =  production * (arrivalDay - previousArrivalDay)
       }
@@ -317,17 +344,17 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
           }
       }
 
-      futureFactory = update('availableCybors', newAvailableCyborgs, futureFactory)
+      futureFactory = update('availableCyborgs', newAvailableCyborgs, futureFactory)
       futureFactory = update('owner', newOwner, futureFactory)
 
       previousArrivalDay = arrivalDay
     }
 
     if (futureFactory.owner !== OwnBy.nobody) {
-      let newAvailableCyborgs = futureFactory.availableCybors +
+      let newAvailableCyborgs = futureFactory.availableCyborgs +
         futureFactory.production * (day - previousArrivalDay)
 
-      futureFactory = update('availableCybors', newAvailableCyborgs, futureFactory)
+      futureFactory = update('availableCyborgs', newAvailableCyborgs, futureFactory)
     }
     return futureFactory
   }
@@ -389,7 +416,7 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
 
   // for troops
 
-  const arriveUntil = (day: number) => (troop: Ifactory['incomingTroops'][any]) =>
+  const arriveUntil = (day: number) => (troop: Ifactory['eventsAtDay'][any]) =>
     troop.daysToArrival <= day
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -399,7 +426,7 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
     Object.keys(factories)
       .map( (id) => factories[Number(id)])
 
-  const troopsToList = (troops: Ifactory['incomingTroops']) => Object.keys(troops)
+  const troopsToList = (troops: Ifactory['eventsAtDay']) => Object.keys(troops)
     .map( (arrivalDay) => troops[Number(arrivalDay)])
 
   const createDistanceKeyBetween = (factory1Id: number, factory2Id: number) => `${factory1Id}:${factory2Id}`  
@@ -431,11 +458,12 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
     })
   }
 
-  const updateFactoryWithTroops = (daysToArrival: number, troops: Ifactory['incomingTroops'][number], factory: Ifactory) => {
-    const incomingTroops = Object.assign<{}, Ifactory['incomingTroops'], Ifactory['incomingTroops']>({}, factory.incomingTroops, {
-      [daysToArrival]: troops
+  const updateFactoryWithEvent = (event: IeventAtDay, factory: Ifactory): Ifactory => {
+    const initialEvents = factory.eventsAtDay
+    const newEvents = Object.assign<{}, Ifactory['eventsAtDay'], Ifactory['eventsAtDay']>({}, initialEvents, {
+      [event.day]: event
     })
-    return update('incomingTroops', incomingTroops, factory)
+    return update('eventsAtDay', newEvents, factory)
   }
 
   const updateFactories = (factory: Ifactory, factories: Ifactories): Ifactories =>
@@ -469,22 +497,19 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
     id: number
     owner: OwnBy
     production: number
-    availableCybors: number
+    availableCyborgs: number
     frozenDays: number
     isBombTarget: boolean
-    incomingTroops: {
-      [daysToArrival: number]: {
-        daysToArrival: number
-        size: number
-      }
+    eventsAtDay: {
+      [day: number]: IeventAtDay
     }
-    
   }
 
   interface IeventAtDay {
     day: number
-    incomingTroopSize: number
-    isBombExploding: boolean
+    incomingTroopSize?: number
+    isBombExploding?: boolean
+    troopOwner?: OwnBy
   }
 
   /**
@@ -504,7 +529,9 @@ const exportsForTests = (function(){ // IIFE to make variables not to leak outsi
     run() // if the runtime environment is NOT node, run the program and thus never leave this function
   }
   return {
-    addDistance
+    OwnBy,
+    addDistance,
+    processTroop
   }
 }())
 
