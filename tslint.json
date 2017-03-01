@@ -10,6 +10,7 @@
     "triple-equals": [true, "allow-null-check"],
     "no-empty": true,
     // "no-magic-numbers": [true],
-    "radix": true
+    "radix": true,
+    "quotemark": [true, "single", "avoid-escape"]
   }
 }
