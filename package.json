@@ -1,13 +1,19 @@
 {
   "name": "codingame-setup",
   "version": "1.0.0",
+  "scripts": {
+    "build": "webpack",
+    "test": "TS_NODE_DISABLE_WARNINGS=true mocha --opts mocha.opts"
+  },
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/mocha": "^2.2.34",
+    "awesome-typescript-loader": "^3.0.8",
     "chai": "^3.5.0",
     "mocha": "^3.2.0",
     "ts-node": "^2.1.0",
     "tslint": "^4.4.2",
-    "typescript": "^2.2.1"
+    "typescript": "^2.2.1",
+    "webpack": "^2.2.1"
   }
 }

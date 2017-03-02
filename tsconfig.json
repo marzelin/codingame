@@ -6,7 +6,6 @@
     "module": "commonjs",
     // don't polyfill any of new ecmascript features
     "target": "esnext",
-    "inlineSourceMap": true,
     // enforce more rigorous rules since catching bugs
     // at compile time is much more time-effecting
     // than debugging runtime errors
@@ -14,14 +13,10 @@
     "strictNullChecks": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "./build"
+    // don't emit files since we emit files with webpack
+    "noEmit": true
   },
   "include": [
     "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*.test.ts"
   ]
-  
 }

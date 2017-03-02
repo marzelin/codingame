@@ -4,8 +4,5 @@
   "version": "0.1.0",
   "command": "yarn",
   "isShellCommand": true,
-  "args": ["run", "tsc", "--","-p", ".", "-w"],
-  "showOutput": "silent",
-  "problemMatcher": "$tsc",
-  "isBackground": true
+  "args": ["run", "build"]
 }

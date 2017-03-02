@@ -19,6 +19,7 @@ declare function print(output: string | number): void
  */
 declare function printErr(output: any): void
 
-/** global variable `module` is checked
- *  to see in what environment the script is executed */
-declare const module: any
+/** when compililing by webpack
+ *  this variable is set to true to allow execution on codingame
+ *  but not to run when testing */
+declare const isRunAtCodingame: boolean
