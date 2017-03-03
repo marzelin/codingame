@@ -1,20 +1,11 @@
-import sync = require('./sync')
-const OwnBy = sync.OwnBy
-
-describe('addDistance', function () {
-  const addDistance = sync.addDistance
-  it('should be a function', function () {
-    addDistance.should.be.a('function')
-  })
-  it('should add distance to the array', function () {
-    addDistance(5, 6, 1)({}).should.deep.equal({
-      '5:6': 1,
-    })
-  })
-})
+import {
+  OwnBy
+} from './interfaces'
+import {
+  processTroop
+} from './processTroop'
 
 describe('processTroop', function () {
-  const processTroop = sync.processTroop
   it('should be a function', function () {
     processTroop.should.be.a('function')
   })
@@ -279,61 +270,5 @@ describe('processTroop', function () {
     }
 
     processTroop(inputArgs, factories).should.deep.equal(expected)
-  })
-})
-
-describe('cyborgsAfterBombExplosion', function () {
-  const cyborgsAfterBombExplosion = sync.cyborgsAfterBombExplosion
-  it('should exist', function () {
-    cyborgsAfterBombExplosion.should.be.a('function')
-  })
-  it('should decrease the number of troops if the number of troops is over 20', function () {
-    const cyborgCount = 33
-    const expected = 17
-    cyborgsAfterBombExplosion(cyborgCount).should.equal(expected)
-  })
-  it('should return 10 if the number of cyborgs is below or equal to 20', function () {
-    const cyborgCount = 17
-    const expected = 7
-    cyborgsAfterBombExplosion(cyborgCount).should.equal(expected)
-  })
-})
-
-describe('getFuture', function () {
-  const getFuture = sync.getFuture
-  it('should exist', function () {
-    getFuture.should.be.a('function')
-  })
-  it('should return proper number of frozen turns when bomb explodes', function() {
-    const inputFactory = {
-      id              : 2,
-      owner           : OwnBy.enemy,
-      production      : 2,
-      availableCyborgs: 5,
-      frozenDays      : 0,
-      isBombTarget    : false,
-      eventsAtDay     : {
-        3: {
-          day:               3,
-          isBombExploding: true
-        }
-      }
-    }
-
-    const expected = {
-      id              : 2,
-      owner           : OwnBy.enemy,
-      production      : 2,
-      availableCyborgs: 0,
-      frozenDays      : 4,
-      isBombTarget    : false,
-      eventsAtDay     : {
-        3: {
-          day:               3,
-          isBombExploding: true
-        }
-      }
-    }
-    getFuture(inputFactory, 4).should.deep.equal(expected)
   })
 })

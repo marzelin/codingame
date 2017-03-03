@@ -119,5 +119,6 @@ const cyborgsAfterBombExplosion = (cyborgCount: number) => {
 }
 
 export {
+  cyborgsAfterBombExplosion,
   getFuture
 }

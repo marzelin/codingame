@@ -30,5 +30,6 @@ const addDistance =
   }
 
 export {
+  addDistance,
   getDistances
 }
