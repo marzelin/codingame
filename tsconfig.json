@@ -4,8 +4,8 @@
     // because `export` and `import` statements
     // can't be used in the code for codingame
     "module": "commonjs",
-    // don't polyfill any of new ecmascript features
-    "target": "esnext",
+    // polyfill only features that are newer than es2015
+    "target": "es2015",
     // enforce more rigorous rules since catching bugs
     // at compile time is much more time-effecting
     // than debugging runtime errors
