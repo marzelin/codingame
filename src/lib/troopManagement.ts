@@ -2,9 +2,6 @@ import {
   maybeAttack
 } from './attacking'
 import {
-  maybeDefend
-} from './defending'
-import {
   productiveOnly
 } from './filterPredicates'
 import {
@@ -34,9 +31,8 @@ const giveOrders = (state: Istate, factoryId: number) => {
   switch (factoryOwner) {
     case OwnBy.enemy:
     case OwnBy.nobody:
-      return maybeAttack(factoryId, state)
     case OwnBy.me:
-      return maybeDefend(factoryId, state)
+      return maybeAttack(factoryId, state)
   }
 }
 

@@ -27,6 +27,7 @@ import {
 const maybeAttack = (targetId: number, state: Istate) => {
   const myFactories = factoriesToList(state.factories)
     .filter(mineOnly)
+    .filter( (factory) => factory.id !== targetId) // since this is used on my own factories, don't target itself
     .sort(byDistance(state.distances, targetId))
     
   let newState = state
