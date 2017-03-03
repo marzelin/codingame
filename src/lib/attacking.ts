@@ -14,7 +14,6 @@ import {
   byDistance
 } from './sorters'
 import {
-  update,
   updateStateWithFactory,
   updateStateWithOrder
 } from './updaters'
@@ -55,7 +54,7 @@ const maybeAttack = (targetId: number, state: Istate) => {
         newState = updateStateWithOrder(newOrder, newState)
 
         const newAvailableCyborgs = myFactory.availableCyborgs  - assaultTroopSize
-        const newMyFactory = update('availableCyborgs', newAvailableCyborgs, myFactory)
+        const newMyFactory = ({...myFactory, availableCyborgs: newAvailableCyborgs})
 
         newState = updateStateWithFactory(newMyFactory, newState)
       }

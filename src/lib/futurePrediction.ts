@@ -6,9 +6,6 @@ import {
   OwnBy
 } from './interfaces'
 import {
-  update
-} from './updaters'
-import {
   eventsToList
 } from './utilities'
 
@@ -24,8 +21,8 @@ const getFuture = (factory: Ifactory, day: number) => {
     const remainingFrozenDays = Math.max(initialfrozenDays - day, 0)
     const newAvailableCyborgs = factory.availableCyborgs + factory.production * Math.max(day - initialfrozenDays, 0)
     const updatedFactory = [factory]
-      .map((factory) => update('availableCyborgs', newAvailableCyborgs, factory))
-      .map((factory) => update('frozenDays', remainingFrozenDays, factory))[0]
+      .map((factory) => ({...factory, availableCyborgs: newAvailableCyborgs}))
+      .map((factory) => ({...factory, frozenDays: remainingFrozenDays}))[0]
     return updatedFactory
   }
 
@@ -42,7 +39,7 @@ const getFuture = (factory: Ifactory, day: number) => {
     let newFrozenDays       = futureFactory.frozenDays
 
     if (newOwner !== OwnBy.nobody) {
-      newAvailableCyborgs =  production * Math.max(arrivalDay - previousArrivalDay - newFrozenDays, 0)
+      newAvailableCyborgs =  newAvailableCyborgs + production * Math.max(arrivalDay - previousArrivalDay - newFrozenDays, 0)
     }
 
     newFrozenDays = Math.max(newFrozenDays - (arrivalDay - previousArrivalDay), 0)
@@ -94,9 +91,9 @@ const getFuture = (factory: Ifactory, day: number) => {
     }
     
     futureFactory = [futureFactory]
-      .map( (factory) => update('availableCyborgs', newAvailableCyborgs, factory))
-      .map( (factory) => update('owner', newOwner, factory))
-      .map( (factory) => update('frozenDays', newFrozenDays, factory))[0]
+      .map( (factory) => ({...factory, availableCyborgs: newAvailableCyborgs}))
+      .map( (factory) => ({...factory, owner: newOwner}))
+      .map( (factory) => ({...factory, frozenDays: newFrozenDays}))[0]
 
     previousArrivalDay = arrivalDay
   }
@@ -105,10 +102,11 @@ const getFuture = (factory: Ifactory, day: number) => {
     let newAvailableCyborgs = futureFactory.availableCyborgs +
       futureFactory.production * Math.max(day - previousArrivalDay - futureFactory.frozenDays, 0)
 
-    futureFactory = update('availableCyborgs', newAvailableCyborgs, futureFactory)
+    futureFactory = ({...futureFactory, availableCyborgs: newAvailableCyborgs})
   }
   
-  futureFactory = update('frozenDays', Math.max(futureFactory.frozenDays - (day - previousArrivalDay), 0) , futureFactory)
+  const newFrozenDays = Math.max(futureFactory.frozenDays - (day - previousArrivalDay), 0)
+  futureFactory = {...futureFactory, frozenDays: newFrozenDays}
 
   return futureFactory
 }

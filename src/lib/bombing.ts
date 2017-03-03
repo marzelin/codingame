@@ -17,7 +17,6 @@ import {
   byProduction
 } from './sorters'
 import {
-  update,
   updateFactoryWithEvent,
   updateStateWithFactory,
   updateStateWithOrder
@@ -52,7 +51,7 @@ const maybeBomb = (state: Istate) => {
 
     if (bombLaunchFactory) {
       const newAvailableBombs = state.availableBombs - 1
-      newState = update('availableBombs', newAvailableBombs, newState)
+      newState = ({...newState, availableBombs: newAvailableBombs})
 
       const newOrder = `BOMB ${bombLaunchFactory.id} ${targetFactory.id}`
       newState = updateStateWithOrder(newOrder, newState)
@@ -62,8 +61,8 @@ const maybeBomb = (state: Istate) => {
 
       let newEventAtThatDay: IeventAtDay
       if (eventAtDayOfBombing) {
-        newEventAtThatDay = update('isBombExploding', true, eventAtDayOfBombing)
-        newEventAtThatDay = update('factoryIdWhereBombWasLaunchedFrom', bombLaunchFactory.id, eventAtDayOfBombing)
+        newEventAtThatDay = ({...eventAtDayOfBombing, isBombExploding: true})
+        newEventAtThatDay = ({...eventAtDayOfBombing, factoryIdWhereBombWasLaunchedFrom: bombLaunchFactory.id})
       } else {
         newEventAtThatDay = {
           day: dayWhenBombExplodes,
@@ -72,7 +71,7 @@ const maybeBomb = (state: Istate) => {
         }
       }
       targetFactory = updateFactoryWithEvent(newEventAtThatDay, targetFactory)
-      targetFactory = update('isBombTarget', true, targetFactory)
+      targetFactory = ({...targetFactory, isBombTarget: true})
       newState = updateStateWithFactory(targetFactory, newState)
       return newState
     }

@@ -2,10 +2,7 @@ import {
   Idistance
 } from './interfaces'
 import {
-  update
-} from './updaters'
-import {
-  createDistanceKeyBetween
+    createDistanceKeyBetween
 } from './utilities'
 
 /**
@@ -26,7 +23,7 @@ const addDistance =
   (factory1Id: number, factory2Id: number, distance: number) =>
   (distances: Idistance) => {
     const distanceKey = createDistanceKeyBetween(factory1Id, factory2Id)
-    return update(distanceKey, distance, distances)
+    return ({...distances, [distanceKey]: distance})
   }
 
 export {

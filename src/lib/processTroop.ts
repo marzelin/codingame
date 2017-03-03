@@ -3,7 +3,6 @@ import {
   Ifactories
 } from './interfaces'
 import {
-  updateFactories,
   updateFactoryWithEvent
 } from './updaters'
 
@@ -60,7 +59,7 @@ const processTroop = ( args: string[], initialFactories: Ifactories): Ifactories
   }
 
   const finalFactoryState = updateFactoryWithEvent(finalEvent, initialFactory)
-  const newFactories = updateFactories(finalFactoryState, initialFactories)
+  const newFactories = {...initialFactories, [finalFactoryState.id]: finalFactoryState}
 
   return  newFactories
 }

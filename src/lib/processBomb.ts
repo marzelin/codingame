@@ -4,8 +4,6 @@ import {
   OwnBy
 } from './interfaces'
 import {
-  update,
-  updateFactories,
   updateFactoryWithEvent
 } from './updaters'
 
@@ -13,7 +11,7 @@ const processBomb = (args: string[], factories: Ifactories) => {
   let [bombOwner, , targetId, day] = args.map(Number)
   if (bombOwner === OwnBy.me) {
     let factory = factories[targetId] 
-    factory = update('isBombTarget', true, factory)
+    factory = ({...factory, isBombTarget: true})
 
     const previousEvent = factory.eventsAtDay[day]
     let newEvent: IeventAtDay = previousEvent
@@ -24,7 +22,7 @@ const processBomb = (args: string[], factories: Ifactories) => {
           
     factory = updateFactoryWithEvent(newEvent, factory)
 
-    factories = updateFactories(factory, factories)
+    factories = {...factories, [factory.id]: factory}
   }
   return factories
 }
