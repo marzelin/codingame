@@ -21,6 +21,8 @@ const noCaptureInProgress = (factory: Ifactory) => {
 const noBombTarget = (factory: Ifactory) => !factory.isBombTarget
 const noFrozen = (factory: Ifactory) => factory.frozenDays - 1 <= 0
 
+const everyBut = (sourceFactoryId: number) => (factory: Ifactory) => factory.id !== sourceFactoryId
+
 // for troops
 
 const arriveUntil = (day: number) => (event: Ifactory['eventsAtDay'][any]) =>
@@ -29,6 +31,7 @@ const arriveUntil = (day: number) => (event: Ifactory['eventsAtDay'][any]) =>
 export {
   productiveOnly,
   enemyOnly,
+  everyBut,
   mineOnly,
   productionGte2only,
   noCaptureInProgress,

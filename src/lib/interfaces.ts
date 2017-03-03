@@ -47,11 +47,16 @@ interface Idistance {
   [ids: string]: number
 }
 
+interface Iscores {
+  [factoryId: number]: number
+}
+
 export {
   OwnBy,
   Istate,
   Ifactories,
   Ifactory,
   IeventAtDay,
-  Idistance
+  Idistance,
+  Iscores
 }

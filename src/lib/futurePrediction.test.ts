@@ -46,7 +46,7 @@ describe('getFuture', function () {
       id              : 2,
       owner           : OwnBy.enemy,
       production      : 2,
-      availableCyborgs: 0,
+      availableCyborgs: 1,
       frozenDays      : 4,
       isBombTarget    : false,
       eventsAtDay     : {
