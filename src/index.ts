@@ -25,7 +25,6 @@ const run = () => { // the program executor
   /** bombs available to use */
   let availableBombs = 2
   let myCapitalId: number | null = null
-  let gameTurn = 0
   let isEarlyGame = true
   
   while (true) { // game loop
