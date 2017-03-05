@@ -51,9 +51,6 @@ const run = () => { // the program executor
     print(printableOrders)
 
     availableBombs = state.availableBombs
-
-    gameTurn += 1
-    if (gameTurn > 1) { isEarlyGame = false }
   }
 }
 
