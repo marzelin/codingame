@@ -1,4 +1,4 @@
-import runCode from './index'
+import runCode from '../src/index'
 
 describe('runCode', function () {
   it('should be a function', function () {
