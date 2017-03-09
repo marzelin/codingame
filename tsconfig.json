@@ -14,7 +14,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     // don't emit files since we emit files with webpack
-    "noEmit": true
+    "noEmit": true,
+    // allow use of includes() and other esnext goodies
+    "lib": [
+      "es2016"
+    ]
   },
   "include": [
     "src/**/*"
