@@ -5,6 +5,9 @@ import {
   createSandpile
 } from './createSandpile'
 import {
+  distributeSand
+} from './distributeSand'
+import {
   findOverloadedField
 } from './findOverloadedField'
 
