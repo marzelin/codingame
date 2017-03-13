@@ -1,4 +1,7 @@
 import {
+  addSandpiles
+} from './addSandpiles'
+import {
   createSandpile
 } from './createSandpile'
 
