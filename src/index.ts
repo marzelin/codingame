@@ -10,6 +10,9 @@ import {
 import {
   findOverloadedField
 } from './findOverloadedField'
+import {
+  printable
+} from './printable'
 
 const run = () => { // the program executor
   const size = Number(readline())
