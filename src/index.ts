@@ -1,18 +1,8 @@
-import {
-  addSandpiles
-} from './addSandpiles'
-import {
-  createSandpile
-} from './createSandpile'
-import {
-  distributeSand
-} from './distributeSand'
-import {
-  findOverloadedField
-} from './findOverloadedField'
-import {
-  printable
-} from './printable'
+import { addSandpiles } from './addSandpiles'
+import { createSandpile } from './createSandpile'
+import { distributeSand } from './distributeSand'
+import { findOverloadedField } from './findOverloadedField'
+import { printable } from './printable'
 
 const run = () => { // the program executor
   const size = Number(readline())
