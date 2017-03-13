@@ -4,6 +4,9 @@ import {
 import {
   createSandpile
 } from './createSandpile'
+import {
+  findOverloadedField
+} from './findOverloadedField'
 
 const run = () => { // the program executor
   const size = Number(readline())
