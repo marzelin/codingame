@@ -1,18 +1,17 @@
 {
   "compilerOptions": {
-    // compile to `module.exports` and `require` statements
-    // because `export` and `import` statements
-    // can't be used in the code for codingame
-    "module": "commonjs",
+    // webpack 2 understands import/export statements
+    "module": "es2015",
     // polyfill only features that are newer than es2015
+    // since JS engine at codingame is compatible with es2015
     "target": "es2015",
     // enforce more rigorous rules since catching bugs
-    // at compile time is much more time-effecting
+    // at compile time is much more time-efficient
     // than debugging runtime errors
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    // don't emit files since we emit files with webpack
+    // don't emit files since we emit js code with webpack
     "noEmit": true,
     // allow use of includes() and other esnext goodies
     "lib": [
