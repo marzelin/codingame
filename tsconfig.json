@@ -9,8 +9,7 @@
     // enforce more rigorous rules since catching bugs
     // at compile time is much more time-effecting
     // than debugging runtime errors
-    "noImplicitAny": true,
-    "strictNullChecks": true,
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     // don't emit files since we emit files with webpack
