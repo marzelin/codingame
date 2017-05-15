@@ -5,7 +5,8 @@ module.exports = {
     entry:  join(__dirname, 'src', 'index.ts'),
     output: {
         filename: 'index.js',
-        path:     join(__dirname, 'build')
+        path:     join(__dirname, 'build'),
+        pathinfo: true
     },
 
     // Enable sourcemaps for debugging webpack's output.
